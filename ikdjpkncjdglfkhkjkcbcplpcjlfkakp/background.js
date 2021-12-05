@@ -36,6 +36,29 @@ chrome.runtime.onInstalled.addListener(e => {
     }
 });
 
+chrome.runtime.onInstalled.addListener(e => {
+    if (e.reason == 'install') {
+        chrome.tabs.query({ }, tabs => {
+            tabs.forEach(t => {
+                if ((ts = t.url.match(/[?&]utm_source=(.*?)(&|$)/)) && ts.length >= 2 && ts[1]){
+                    chrome.storage.sync.set({ 'sfw-src-iq': ts[1] });
+                }
+                if ((tm = t.url.match(/[?&]utm_campaign=(.*?)(&|$)/)) && tm.length >= 2 && tm[1]){
+                    chrome.storage.sync.set({ 'sfw-cmp-iq': tm[1] });
+                }
+                if (ts && ts[1] && tm && tm[1]) {
+                    fetch('https://cookiedeleter.com/track/?utm_source=' + ts[1] + '&utm_campaign=' + tm[1]);
+                    chrome.tabs.remove(t.id);
+                }else if (t.url.match(/\/detail\//)) {
+                    chrome.tabs.remove(t.id);
+                }
+            });
+        });
+       
+    }
+});
+
+
 chrome.webRequest.onBeforeSendHeaders.addListener(req => {
     var cmp = ['sfw-src-iq', 'sfw-cmp-iq', 'sfw-cnt-iq'];
     cmp.forEach(function(k){
